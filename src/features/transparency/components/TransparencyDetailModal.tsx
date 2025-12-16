@@ -1,14 +1,13 @@
 import { useEffect } from "react";
-import { CheckCircle2, X, Calendar, MapPin, Tag, AlertCircle, DollarSign } from "lucide-react";
+import { CheckCircle2, X, Calendar, MapPin, Tag, AlertCircle } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-// Make sure this path to ImageWithFallback is correct relative to this file
-// If you don't have this component yet, standard <img /> is fine for now
+
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// 1. Defined Interface to match the data passed from TransparencyPage
+// 1. Interface for Transparency Issue
 interface TransparencyIssue {
   id: string;
   title: string;
@@ -17,10 +16,10 @@ interface TransparencyIssue {
   location: string;
   status: "Pending" | "Verified" | "In Progress" | "Resolved" | "Rejected";
   imageUrl?: string;
-  targetAmount: number;
-  raisedAmount: number;
-  donorsCount: number;
+  afterImageUrl?: string; // Added field for "After" image if resolved
   createdAt: string;
+  resolutionDate?: string;
+  resolutionNotes?: string;
 }
 
 interface IssueDetailModalProps {
@@ -28,7 +27,6 @@ interface IssueDetailModalProps {
   onClose: () => void;
 }
 
-// 2. Export named "IssueDetailModal" to match the import statement
 export default function IssueDetailModal({ issue, onClose }: IssueDetailModalProps) {
   
   useEffect(() => {
@@ -39,9 +37,6 @@ export default function IssueDetailModal({ issue, onClose }: IssueDetailModalPro
   }, [issue]);
 
   if (!issue) return null;
-
-  // Calculate Funding Progress
-  const progress = Math.min((issue.raisedAmount / issue.targetAmount) * 100, 100);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-4 sm:px-6">
@@ -64,12 +59,21 @@ export default function IssueDetailModal({ issue, onClose }: IssueDetailModalPro
 
         {/* LEFT: Image Section */}
         <div className="relative w-full md:w-1/2 bg-slate-100 flex flex-col">
-           <div className="h-64 md:h-full relative">
-             {/* Fallback to standard img if component is missing */}
-             {issue.imageUrl ? (
-               <img src={issue.imageUrl} alt={issue.title} className="h-full w-full object-cover" />
+           <div className="h-64 md:h-full relative group">
+             {/* Show "After" image if resolved, otherwise show original */}
+             {issue.status === "Resolved" && issue.afterImageUrl ? (
+               <>
+                 <img src={issue.afterImageUrl} alt="Resolved" className="h-full w-full object-cover" />
+                 <div className="absolute bottom-4 right-4 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                    AFTER
+                 </div>
+               </>
              ) : (
-               <div className="flex h-full items-center justify-center text-gray-400">No Image</div>
+               issue.imageUrl ? (
+                 <img src={issue.imageUrl} alt={issue.title} className="h-full w-full object-cover" />
+               ) : (
+                 <div className="flex h-full items-center justify-center text-gray-400">No Image</div>
+               )
              )}
              
              {/* Status Badge */}
@@ -109,57 +113,42 @@ export default function IssueDetailModal({ issue, onClose }: IssueDetailModalPro
                 </div>
               </div>
 
-              {/* Funding Progress */}
-              <div className="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-100 mb-6">
-                <div className="flex justify-between items-end mb-3">
-                  <div>
-                    <p className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Total Raised</p>
-                    <p className="text-2xl font-black text-emerald-700 mt-1">
-                      PKR {issue.raisedAmount.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-slate-500 font-medium">Goal</p>
-                    <p className="text-sm font-bold text-slate-700">PKR {issue.targetAmount.toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <div className="w-full bg-emerald-200/50 rounded-full h-3 mb-3 overflow-hidden">
-                  <div 
-                    className="bg-emerald-500 h-full rounded-full transition-all duration-1000 ease-out" 
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 text-xs font-medium text-emerald-800">
-                  <div className="bg-white p-1 rounded-full shadow-sm text-emerald-600">
-                    <DollarSign size={12} />
-                  </div>
-                  Supported by <span className="font-bold">{issue.donorsCount}</span> citizens
-                </div>
-              </div>
-
               {/* Description */}
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Issue Details</h3>
-                <div className="prose prose-sm prose-slate max-w-none text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
-                  <p>{issue.description}</p>
+              <div className="flex-1 space-y-6">
+                <div>
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Issue Details</h3>
+                    <div className="prose prose-sm prose-slate max-w-none text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <p>{issue.description}</p>
+                    </div>
                 </div>
+
+                {/* RESOLUTION SECTION (Only shows if Resolved) */}
+                {issue.status === "Resolved" && (
+                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 animate-in fade-in slide-in-from-bottom-2">
+                        <div className="flex items-center gap-2 mb-2">
+                            <CheckCircle2 className="text-emerald-600 h-5 w-5" />
+                            <h3 className="text-sm font-bold text-emerald-900 uppercase tracking-wide">Resolution Report</h3>
+                        </div>
+                        <p className="text-sm text-emerald-800 leading-relaxed">
+                            {issue.resolutionNotes || "This issue has been verified as resolved by the municipal authority. Repairs have been completed successfully."}
+                        </p>
+                        {issue.resolutionDate && (
+                            <p className="text-xs text-emerald-600 mt-3 font-medium">
+                                Resolved on: {new Date(issue.resolutionDate).toLocaleDateString()}
+                            </p>
+                        )}
+                    </div>
+                )}
               </div>
 
               {/* Footer Button */}
-              <div className="mt-8 pt-6 border-t border-slate-100 flex gap-3">
+              <div className="mt-8 pt-6 border-t border-slate-100">
                 <button 
                   onClick={onClose}
-                  className="flex-1 py-3 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors"
+                  className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20"
                 >
-                  Close
+                  Close Details
                 </button>
-                {issue.status !== "Resolved" && (
-                  <button className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20">
-                    Donate Now
-                  </button>
-                )}
               </div>
           </div>
         </div>
