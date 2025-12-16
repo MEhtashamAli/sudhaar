@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Mail, Phone, MapPin, Twitter, Facebook, Instagram } from "lucide-react";
-import logoImg from "@/assets/sudhaar_logo.png"; 
+import logoImg from "../../assets/sudhaar_logo.png";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
